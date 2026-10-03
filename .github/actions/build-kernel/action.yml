@@ -96,7 +96,16 @@ runs:
           # [pandora-r2] force a list of options OFF directly in gki_defconfig,
           # using the canonical kconfig form (a bare # CONFIG_X is not set line);
           # config_list cannot express this because comment lines are skipped there.
-          DEF=arch/arm64/configs/gki_defconfig
+          # this step runs in $GITHUB_WORKSPACE/kernel, while gki_defconfig lives in
+          # kernel/common/arch/arm64/configs/ - set-kernel-config only gets away with
+          # the short path because it cds into kernel/common. The previous run died on
+          # exactly this: grep: arch/arm64/configs/gki_defconfig: No such file or directory
+          DEF=common/arch/arm64/configs/gki_defconfig
+          if [ ! -f "$DEF" ]; then
+            echo "ERROR: defconfig not found at $DEF (cwd=$(pwd))" >&2
+            ls -d common/arch/arm64/configs 2>/dev/null || true
+            exit 1
+          fi
           for k in CONFIG_UNMAP_KERNEL_AT_EL0 CONFIG_ARM64_BTI \
                    CONFIG_MITIGATE_SPECTRE_BRANCH_HISTORY CONFIG_RODATA_FULL_DEFAULT_ENABLED \
                    CONFIG_MODULE_SIG_PROTECT CONFIG_PANIC_ON_OOPS CONFIG_KFENCE CONFIG_DAMON \
