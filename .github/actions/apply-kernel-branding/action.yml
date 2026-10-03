@@ -61,10 +61,21 @@ runs:
         fi
 
         if [ "$KEEP_KMI" = "true" ] && [ -n "$KMI" ]; then
-          # write the full string unconditionally; the old code silently degraded to
-          # "-$BRAND" whenever scripts/setlocalversion lacked the scm_version marker,
-          # which dropped both the android part and the KMI generation.
-          sed -i '$d' scripts/setlocalversion && echo "echo \"$KERNEL_PART.${{ inputs.sublevel }}-$ANDROID_PART-$KMI-$BRAND\"" >> scripts/setlocalversion
+          # This tree's scripts/setlocalversion APPENDS its output to the version, so
+          # writing the whole "6.1.138-android14-11-BRAND" produced
+          # "6.1.1386.1.138-android14-11-BRAND" (observed on run 37101971507).
+          # Follow the same split the legacy branch uses per kernel family:
+          #   scm_version variant / 6.6+ trees replace the suffix -> full string
+          #   android14-6.1 and older append                       -> "-android14-11-BRAND"
+          if grep -q 'scm_version}"' scripts/setlocalversion; then
+            BRAND_STRING="$KERNEL_PART.${{ inputs.sublevel }}-$ANDROID_PART-$KMI-$BRAND"
+          elif [[ "${{ inputs.version }}" == "android15-6.6" || "${{ inputs.version }}" == "android16-6.12" || "${{ inputs.version }}" == "android17-6.18" ]]; then
+            BRAND_STRING="$KERNEL_PART.${{ inputs.sublevel }}-$ANDROID_PART-$KMI-$BRAND"
+          else
+            BRAND_STRING="-$ANDROID_PART-$KMI-$BRAND"
+          fi
+          echo "branding suffix: $BRAND_STRING"
+          sed -i '$d' scripts/setlocalversion && echo "echo \"$BRAND_STRING\"" >> scripts/setlocalversion
         else
           if [[ ${{ inputs.version }} == "android15-6.6" || ${{ inputs.version }} == "android16-6.12" || ${{ inputs.version }} == "android17-6.18" ]]; then
             KERNEL_STRING="$KERNEL_PART.${{ inputs.sublevel }}-$ANDROID_PART"
