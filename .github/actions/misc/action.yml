@@ -31,10 +31,10 @@ runs:
           CONFIG_KALLSYMS_ALL=y
 
           # ---- Pandora-parity fragment (from IKCONFIG diff vs stock/Pandora) ----
-          # ROUND 1: only options that are plain bools in GKI - no built-in<->module
-          # flips. Flipping those makes Kleaf fail ("Unable to find <x>.ko"), because
-          # common/BUILD.bazel declares the module outputs. Round 2 will handle zram
-          # (built-in + zstd) together with the matching module_outs edit.
+          # ROUND 1 - plain bool options only, no built-in-to-module flips.
+          # Flipping one makes Kleaf fail: Kleaf requires every declared module
+          # output to exist, and common/BUILD.bazel declares zram.ko there.
+          # Round 2 handles zram and friends together with a module_outs edit.
           CONFIG_CPU_IDLE_THERMAL=y
           # networking: keep the choice menu, BBR available, CUBIC default (as Pandora)
           CONFIG_TCP_CONG_ADVANCED=y
@@ -50,7 +50,7 @@ runs:
           # ftrace/kprobe capability
           CONFIG_OPTPROBES=y
           CONFIG_HAVE_KPROBES_ON_FTRACE=y
-          # DEFERRED to round 2 (module flips, need BUILD.bazel module_outs edits):
+          # DEFERRED to round 2 - they need BUILD.bazel module_outs edits:
           #   CONFIG_ZRAM=y / ZSMALLOC=y / ZRAM_DEF_COMP_ZSTD=y / ZRAM_MEMORY_TRACKING
           #   CONFIG_CRYPTO_LZ4P / CRYPTO_ZSTDP
           #   CONFIG_IP_SET* / NETFILTER_XT_SET / IP6_NF_TARGET_* / XT_MATCH_ADDRTYPE
