@@ -92,6 +92,33 @@ runs:
           if [ "$PAGE_SIZE" = "16k" ]; then
             PAGE_SIZE_FLAGS+=(--page_size=16k)
           fi
+          # [pandora-r2] zram/zsmalloc are built-in now -> their module_outs entries
+          # must be removed or Kleaf fails with Unable to find <module>.ko.
+          for f in common/BUILD.bazel common/modules.bzl; do
+            [ -f "$f" ] || continue
+            echo "[pandora-r2] module_outs before ($f):"
+            grep -n -E "zram\.ko|zsmalloc\.ko" "$f" || true
+            sed -i -E "s|^([[:space:]]*)(\"(drivers/block/zram/zram|mm/zsmalloc)\.ko\")|\1# \2  # [pandora-r2] built-in|" "$f"
+            echo "[pandora-r2] module_outs after ($f):"
+            grep -n -E "zram\.ko|zsmalloc\.ko" "$f" || true
+          done
+
+          # [pandora-r2] force a list of options OFF directly in gki_defconfig,
+          # using the canonical kconfig form (a bare # CONFIG_X is not set line);
+          # config_list cannot express this because comment lines are skipped there.
+          DEF=arch/arm64/configs/gki_defconfig
+          for k in CONFIG_UNMAP_KERNEL_AT_EL0 CONFIG_ARM64_BTI \
+                   CONFIG_MITIGATE_SPECTRE_BRANCH_HISTORY CONFIG_RODATA_FULL_DEFAULT_ENABLED \
+                   CONFIG_MODULE_SIG_PROTECT CONFIG_PANIC_ON_OOPS CONFIG_KFENCE CONFIG_DAMON \
+                   CONFIG_RCU_LAZY_DEFAULT_OFF CONFIG_ZRAM_DEF_COMP_LZORLE; do
+            if grep -q "^$k=" "$DEF"; then
+              sed -i "s|^$k=.*|# $k is not set|" "$DEF"
+            elif ! grep -q "^# $k is not set" "$DEF"; then
+              echo "# $k is not set" >> "$DEF"
+            fi
+          done
+          echo "[pandora-r2] gki_defconfig off-list now:"
+          grep -n -E "UNMAP_KERNEL_AT_EL0|ARM64_BTI|MITIGATE_SPECTRE|RODATA_FULL|MODULE_SIG_PROTECT|PANIC_ON_OOPS|KFENCE|DAMON|RCU_LAZY|ZRAM_DEF_COMP" "$DEF" | head -30 || true
           tools/bazel build \
             --config=fast \
             --verbose_failures \
