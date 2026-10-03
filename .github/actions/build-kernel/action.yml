@@ -77,12 +77,24 @@ runs:
           build/build.sh -j"$(nproc)"
         else
           sed -i '/name = "kernel_aarch64",/a\    check_defconfig = "disabled",' common/BUILD.bazel
+          # [image-only experiment] remove the module goals so Kleaf takes the branch
+          # that only touches a placeholder instead of running `make modules_install`
+          echo "[image-only] locating MAKE_GOALS"
+          grep -rn "MAKE_GOALS" common/build.config* build.config* 2>/dev/null | head -20 || true
+          if [ -f common/BUILD.bazel ]; then grep -n "make_goals" common/BUILD.bazel | head -10 || true; fi
+          for cfg in $(grep -rl "MAKE_GOALS" common/build.config* build.config* 2>/dev/null || true); do
+            cp "$cfg" "$cfg.image-only.bak"
+            sed -i -E 's/\bmodules_install\b//g; s/\bmodules\b//g' "$cfg"
+            grep -q "Image" "$cfg" || sed -i -E 's/^(MAKE_GOALS=.*)"[[:space:]]*$/\1 Image"/' "$cfg"
+            echo "[image-only] patched $cfg -> $(grep MAKE_GOALS "$cfg" | head -1)"
+          done
           PAGE_SIZE_FLAGS=()
           if [ "$PAGE_SIZE" = "16k" ]; then
             PAGE_SIZE_FLAGS+=(--page_size=16k)
           fi
           tools/bazel build \
             --config=fast \
+            --verbose_failures \
             "${PAGE_SIZE_FLAGS[@]}" \
             --disk_cache=/home/runner/.cache/bazel \
             //common:kernel_aarch64/Image
