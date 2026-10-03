@@ -43,10 +43,5 @@ runs:
           CONFIG_OPTPROBES=y
           CONFIG_HAVE_KPROBES_ON_FTRACE=y
 
-          # ---- round 2: zram built-in with zstd, like Pandora ----
-          # their module_outs entries are removed by build-kernel in the same commit
-          CONFIG_ZRAM=y
-          CONFIG_ZSMALLOC=y
-          CONFIG_ZRAM_DEF_COMP_ZSTD=y
-          CONFIG_ZRAM_MEMORY_TRACKING=y
+
           
