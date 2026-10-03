@@ -29,4 +29,24 @@ runs:
           CONFIG_TMPFS_POSIX_ACL=y
           CONFIG_KALLSYMS=y
           CONFIG_KALLSYMS_ALL=y
+
+          # ---- Pandora parity fragment (from IKCONFIG diff vs stock/Pandora) ----
+          # bool options only (no built-in-to-module flips here)
+          CONFIG_CPU_IDLE_THERMAL=y
+          CONFIG_TCP_CONG_ADVANCED=y
+          CONFIG_TCP_CONG_BBR=y
+          CONFIG_DEFAULT_CUBIC=y
+          CONFIG_UNIX_SCM=y
+          CONFIG_RCU_NOCB_CPU_DEFAULT_ALL=y
+          CONFIG_TASKS_TRACE_RCU_READ_MB=y
+          CONFIG_BLK_MQ_USE_LOCAL_THREAD=y
+          CONFIG_OPTPROBES=y
+          CONFIG_HAVE_KPROBES_ON_FTRACE=y
+
+          # ---- round 2: zram built-in with zstd, like Pandora ----
+          # their module_outs entries are removed by build-kernel in the same commit
+          CONFIG_ZRAM=y
+          CONFIG_ZSMALLOC=y
+          CONFIG_ZRAM_DEF_COMP_ZSTD=y
+          CONFIG_ZRAM_MEMORY_TRACKING=y
           
